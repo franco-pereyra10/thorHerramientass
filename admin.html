@@ -2,14 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Panel de administración - Thor Herramientas</title>
+  <title>🔒 Panel de administración - Solo personal autorizado</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Si ya tenés styles.css, lo usamos -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="styles.css">
   <style>
     body {
       background-color: #f5f5f5;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
     }
     header.header {
       background-color: #ffd600;
@@ -41,6 +42,17 @@
     .btn-principal:hover {
       filter: brightness(0.95);
     }
+    .btn-secundario {
+      background-color: #e0e0e0;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-secundario:hover {
+      filter: brightness(0.95);
+    }
     main.admin-container {
       max-width: 1000px;
       margin: 20px auto;
@@ -48,6 +60,7 @@
       padding: 16px;
       border-radius: 8px;
       border: 1px solid #ddd;
+      box-sizing: border-box;
     }
     .admin-container h1 {
       font-size: 22px;
@@ -86,17 +99,7 @@
       margin-top: 6px;
       display: flex;
       gap: 10px;
-    }
-    .btn-secundario {
-      background-color: #e0e0e0;
-      border: none;
-      border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .btn-secundario:hover {
-      filter: brightness(0.95);
+      flex-wrap: wrap;
     }
     table.admin-table {
       width: 100%;
@@ -116,6 +119,7 @@
     .admin-table-actions {
       display: flex;
       gap: 6px;
+      flex-wrap: wrap;
     }
     .btn-pequeño {
       padding: 4px 8px;
@@ -126,6 +130,106 @@
       padding: 12px;
       font-size: 12px;
       color: #555;
+    }
+    .oculto {
+      display: none;
+    }
+
+    /* ----- LOGIN OVERLAY (ACCESO RESTRINGIDO) ----- */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #ffffff 0, #f2f2f2 50%, #e0e0e0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .login-card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px 24px 20px;
+      max-width: 380px;
+      width: 90%;
+      box-sizing: border-box;
+      text-align: center;
+      border-top: 4px solid #c62828;
+    }
+    .login-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid #c62828;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      color: #c62828;
+      font-size: 26px;
+    }
+    .login-card h2 {
+      margin: 0;
+      margin-bottom: 4px;
+      font-size: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #c62828;
+    }
+    .login-card h3 {
+      margin: 0;
+      margin-bottom: 10px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #333;
+    }
+    .login-card p {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #555;
+    }
+    .login-card label {
+      font-size: 13px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+      text-align: left;
+    }
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+    }
+    .login-error {
+      color: #c62828;
+      font-size: 12px;
+      min-height: 16px;
+      margin-bottom: 6px;
+      text-align: left;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: none;
+      background-color: #1976d2;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .login-btn:hover {
+      filter: brightness(0.95);
+    }
+    .login-note {
+      font-size: 11px;
+      color: #777;
+      margin-top: 8px;
     }
   </style>
 </head>
@@ -140,7 +244,25 @@
   </div>
 </header>
 
-<main class="admin-container">
+<!-- LOGIN DE ADMINISTRADOR - ACCESO RESTRINGIDO -->
+<div id="login-overlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-icon">🔒</div>
+    <h2>Acceso restringido</h2>
+    <h3>Solo personal autorizado</h3>
+    <p>Este panel permite modificar precios, stock y productos de la tienda. Si no sos parte del personal autorizado, cerrá esta página.</p>
+    <form id="admin-login-form">
+      <label for="admin-password-input">Contraseña de administrador</label>
+      <input type="password" id="admin-password-input" autocomplete="off" required>
+      <div id="admin-login-error" class="login-error"></div>
+      <button type="submit" class="login-btn">Ingresar</button>
+      <div class="login-note">Tu actividad puede ser supervisada.</div>
+    </form>
+  </div>
+</div>
+
+<!-- CONTENIDO DEL PANEL (oculto hasta que se loguea) -->
+<main id="admin-main" class="admin-container oculto">
   <h1>Productos</h1>
   <p style="font-size:13px;margin-bottom:10px;">
     Desde acá podés agregar, editar o eliminar productos. Los cambios se guardan en Firestore y se ven en la tienda.
@@ -236,6 +358,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
 <script>
+  // ⚙️ Config de tu proyecto Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyC7oF4s3Fqy7EvjjAWxNxfPdPnmECEzQ",
     authDomain: "thorherramientas1.firebaseapp.com",
@@ -247,6 +370,37 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
+  // 🔐 Contraseña del panel de administrador (básica, en el front)
+  const ADMIN_PASSWORD = "thor2025"; // ← cambiá esto por la que quieras
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const loginOverlay = document.getElementById("login-overlay");
+    const adminMain = document.getElementById("admin-main");
+    const formLogin = document.getElementById("admin-login-form");
+    const inputPass = document.getElementById("admin-password-input");
+    const errorBox = document.getElementById("admin-login-error");
+
+    // Si ya se logueó en esta pestaña, no volvemos a pedir contraseña
+    if (sessionStorage.getItem("adminLogged") === "true") {
+      loginOverlay.style.display = "none";
+      adminMain.classList.remove("oculto");
+    }
+
+    formLogin.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const pass = inputPass.value.trim();
+      if (pass === ADMIN_PASSWORD) {
+        sessionStorage.setItem("adminLogged", "true");
+        loginOverlay.style.display = "none";
+        adminMain.classList.remove("oculto");
+      } else {
+        errorBox.textContent = "Contraseña incorrecta.";
+        inputPass.value = "";
+        inputPass.focus();
+      }
+    });
+  });
 </script>
 
 <script src="admin.js"></script>
