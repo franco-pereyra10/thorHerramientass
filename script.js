@@ -1,7 +1,7 @@
 // Usa la instancia global "db" que se inicializa en index.html (Firebase)
 
 const COLECCION_PRODUCTOS = "productos";
-const NUMERO_WHATSAPP = "5491112345678"; // Cambiá por el número real de la ferretería
+const NUMERO_WHATSAPP = "5491156465544"; // Cambiá por el número real de la ferretería
 
 let productos = [];
 let carrito = []; // { id: string, cantidad: number }
