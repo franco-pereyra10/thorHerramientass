@@ -1,7 +1,7 @@
-// Usa la instancia global "db" que se inicializa en index.html
+// Usa la instancia global "db" que se inicializa en index.html (Firebase)
 
 const COLECCION_PRODUCTOS = "productos";
-const NUMERO_WHATSAPP = "5491156465544"; // cambiá por el número real del negocio
+const NUMERO_WHATSAPP = "5491112345678"; // Cambiá por el número real de la ferretería
 
 let productos = [];
 let carrito = []; // { id: string, cantidad: number }
@@ -20,6 +20,20 @@ function obtenerProductoPorId(id) {
   return productos.find(p => p.id === id);
 }
 
+function obtenerImagenesProducto(producto) {
+  const placeholder = "https://via.placeholder.com/300x200?text=Producto";
+  let imagenes = [];
+
+  if (producto.imagenes && producto.imagenes.length) {
+    imagenes = producto.imagenes.filter(Boolean);
+  } else if (producto.imagen) {
+    imagenes = [producto.imagen];
+  }
+
+  if (imagenes.length === 0) imagenes = [placeholder];
+  return imagenes;
+}
+
 // ---------------------- FIRESTORE ----------------------
 
 async function cargarProductosDesdeFirestore() {
@@ -30,7 +44,7 @@ async function cargarProductosDesdeFirestore() {
   }));
 }
 
-// ---------------------- CARRITO -------------------------
+// ---------------------- CARRITO (LÓGICA) -------------------------
 
 function guardarCarrito() {
   try {
@@ -52,7 +66,7 @@ function cargarCarrito() {
 function actualizarContadorCarrito() {
   const span = document.getElementById("cart-count");
   const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0);
-  span.textContent = totalItems;
+  if (span) span.textContent = totalItems;
 }
 
 function agregarAlCarrito(idProducto) {
@@ -130,6 +144,8 @@ function actualizarCarritoUI() {
   const contenedor = document.getElementById("carrito-items");
   const totalSpan = document.getElementById("carrito-total");
   const btnFinalizar = document.getElementById("btn-finalizar-compra");
+
+  if (!contenedor || !totalSpan || !btnFinalizar) return;
 
   contenedor.innerHTML = "";
 
@@ -241,6 +257,8 @@ function cargarMarcasEnFiltro() {
 
 function renderProductos(lista) {
   const contenedor = document.getElementById("lista-productos");
+  if (!contenedor) return;
+
   contenedor.innerHTML = "";
 
   if (lista.length === 0) {
@@ -251,6 +269,8 @@ function renderProductos(lista) {
   lista.forEach(producto => {
     const agotado = producto.stock <= 0;
     const textoInalambrico = producto.inalambrico ? "Inalámbrico" : "Con cable";
+    const imagenes = obtenerImagenesProducto(producto);
+    const imagenPrincipal = imagenes[0];
 
     let botonesHTML;
     if (agotado) {
@@ -274,7 +294,7 @@ function renderProductos(lista) {
     tarjeta.className = "tarjeta-producto";
     tarjeta.dataset.id = producto.id;
     tarjeta.innerHTML = `
-      <img src="${producto.imagen}" alt="${producto.nombre}">
+      <img src="${imagenPrincipal}" alt="${producto.nombre}">
       <h3>${producto.nombre}</h3>
       <p class="descripcion">${producto.descripcion || ""}</p>
       <p class="precio">${formatearPrecio(producto.precio)}</p>
@@ -291,10 +311,15 @@ function renderProductos(lista) {
 }
 
 function aplicarFiltros() {
-  const texto = document.getElementById("buscador").value.toLowerCase();
-  const marca = document.getElementById("filtro-marca").value;
-  const filtroInalambrico = document.getElementById("filtro-inalambrico").value;
-  const orden = document.getElementById("orden-precio").value;
+  const textoInput = document.getElementById("buscador");
+  const marcaSelect = document.getElementById("filtro-marca");
+  const inalamSelect = document.getElementById("filtro-inalambrico");
+  const ordenSelect = document.getElementById("orden-precio");
+
+  const texto = textoInput ? textoInput.value.toLowerCase() : "";
+  const marca = marcaSelect ? marcaSelect.value : "todas";
+  const filtroInalambrico = inalamSelect ? inalamSelect.value : "todos";
+  const orden = ordenSelect ? ordenSelect.value : "default";
 
   let filtrados = productos.filter(p => {
     const coincideTexto =
@@ -328,8 +353,12 @@ function abrirDetalleProducto(idProducto) {
   if (!producto) return;
 
   const panel = document.getElementById("detalle-panel");
+  const backdrop = document.getElementById("detalle-backdrop");
+  if (!panel || !backdrop) return;
+
   const agotado = producto.stock <= 0;
   const textoInalambrico = producto.inalambrico ? "Inalámbrico" : "Con cable";
+  const imagenes = obtenerImagenesProducto(producto);
 
   let botonesHTML;
   if (agotado) {
@@ -343,6 +372,8 @@ function abrirDetalleProducto(idProducto) {
     `;
   }
 
+  const hayCarrusel = imagenes.length > 1;
+
   panel.innerHTML = `
     <div class="detalle-panel-contenido">
       <div class="detalle-header">
@@ -351,17 +382,29 @@ function abrirDetalleProducto(idProducto) {
       </div>
       <div class="detalle-body">
         <div class="detalle-imagen-contenedor">
-          <img src="${producto.imagen}" alt="${producto.nombre}">
+          <img id="detalle-imagen" src="${imagenes[0]}" alt="${producto.nombre}" style="cursor: zoom-in;">
+          ${
+            hayCarrusel
+              ? `
+          <div class="detalle-imagen-controles">
+            <button id="detalle-prev" class="detalle-nav">&lt;</button>
+            <span id="detalle-indicador" class="detalle-indicador">1 / ${imagenes.length}</span>
+            <button id="detalle-next" class="detalle-nav">&gt;</button>
+          </div>`
+              : ""
+          }
         </div>
         <div class="detalle-info">
           <p class="detalle-precio">${formatearPrecio(producto.precio)}</p>
           <p class="detalle-stock">${agotado ? "Producto agotado" : `Stock disponible: ${producto.stock} unidades`}</p>
           <p class="detalle-descripcion">${producto.descripcion || ""}</p>
           <p><strong>Marca:</strong> ${producto.marca || "-"} · ${textoInalambrico}</p>
-          ${(producto.detalles && producto.detalles.length > 0) ? `
-            <ul class="detalle-lista">
-              ${producto.detalles.map(d => `<li>${d}</li>`).join("")}
-            </ul>` : ""
+          ${
+            (producto.detalles && producto.detalles.length > 0)
+              ? `<ul class="detalle-lista">
+                  ${producto.detalles.map(d => `<li>${d}</li>`).join("")}
+                 </ul>`
+              : ""
           }
           <p class="detalle-envios-titulo">Opciones de envío:</p>
           <ul class="detalle-envios">
@@ -374,42 +417,96 @@ function abrirDetalleProducto(idProducto) {
   `;
 
   panel.classList.remove("oculto");
-  document.getElementById("detalle-backdrop").classList.remove("oculto");
+  backdrop.classList.remove("oculto");
 
-  document.getElementById("btn-cerrar-detalle").addEventListener("click", cerrarDetalleProducto);
+  const btnCerrar = document.getElementById("btn-cerrar-detalle");
+  if (btnCerrar) btnCerrar.addEventListener("click", cerrarDetalleProducto);
 
   const btnAgregar = panel.querySelector(".btn-agregar:not(.btn-agotado)");
   if (btnAgregar) {
-    btnAgregar.addEventListener("click", e => {
-      const id = e.target.dataset.id;
-      agregarAlCarrito(id);
-    });
+    btnAgregar.addEventListener("click", e => agregarAlCarrito(e.target.dataset.id));
   }
 
   const btnComprarAhora = panel.querySelector(".btn-comprar-ahora");
   if (btnComprarAhora) {
-    btnComprarAhora.addEventListener("click", e => {
-      const id = e.target.dataset.id;
-      comprarAhora(id);
+    btnComprarAhora.addEventListener("click", e => comprarAhora(e.target.dataset.id));
+  }
+
+  // Carrusel
+  if (hayCarrusel) {
+    let indiceActual = 0;
+    const imgEl = panel.querySelector("#detalle-imagen");
+    const indicador = panel.querySelector("#detalle-indicador");
+    const btnPrev = panel.querySelector("#detalle-prev");
+    const btnNext = panel.querySelector("#detalle-next");
+
+    function actualizarImagen() {
+      imgEl.src = imagenes[indiceActual];
+      if (indicador) {
+        indicador.textContent = `${indiceActual + 1} / ${imagenes.length}`;
+      }
+    }
+
+    btnPrev.addEventListener("click", () => {
+      indiceActual = (indiceActual - 1 + imagenes.length) % imagenes.length;
+      actualizarImagen();
     });
+
+    btnNext.addEventListener("click", () => {
+      indiceActual = (indiceActual + 1) % imagenes.length;
+      actualizarImagen();
+    });
+
+    // Click en la imagen -> ampliar la imagen actual del carrusel
+    imgEl.addEventListener("click", () => abrirImagenAmpliada(imagenes[indiceActual]));
+  } else {
+    const imgEl = panel.querySelector("#detalle-imagen");
+    imgEl.addEventListener("click", () => abrirImagenAmpliada(imagenes[0]));
   }
 }
 
+// ---------------------- IMAGEN AMPLIADA -----------------
+
+function abrirImagenAmpliada(src) {
+  const backdrop = document.getElementById("imagen-ampliada-backdrop");
+  const img = document.getElementById("imagen-ampliada");
+  const btnCerrar = document.getElementById("cerrar-imagen");
+
+  if (!backdrop || !img || !btnCerrar) return;
+
+  img.src = src;
+  backdrop.classList.remove("oculto");
+
+  // Cerramos al tocar el botón o el fondo
+  btnCerrar.onclick = () => backdrop.classList.add("oculto");
+  backdrop.onclick = (e) => {
+    if (e.target === backdrop) {
+      backdrop.classList.add("oculto");
+    }
+  };
+}
+
 function cerrarDetalleProducto() {
-  document.getElementById("detalle-panel").classList.add("oculto");
-  document.getElementById("detalle-backdrop").classList.add("oculto");
+  const panel = document.getElementById("detalle-panel");
+  const backdrop = document.getElementById("detalle-backdrop");
+  if (panel) panel.classList.add("oculto");
+  if (backdrop) backdrop.classList.add("oculto");
 }
 
 // ---------------------- PANEL CARRITO --------------------
 
 function abrirCarrito() {
-  document.getElementById("carrito-panel").classList.remove("oculto");
-  document.getElementById("carrito-backdrop").classList.remove("oculto");
+  const panel = document.getElementById("carrito-panel");
+  const backdrop = document.getElementById("carrito-backdrop");
+  if (panel) panel.classList.remove("oculto");
+  if (backdrop) backdrop.classList.remove("oculto");
 }
 
 function cerrarCarrito() {
-  document.getElementById("carrito-panel").classList.add("oculto");
-  document.getElementById("carrito-backdrop").classList.add("oculto");
+  const panel = document.getElementById("carrito-panel");
+  const backdrop = document.getElementById("carrito-backdrop");
+  if (panel) panel.classList.add("oculto");
+  if (backdrop) backdrop.classList.add("oculto");
 }
 
 // ---------------------- INICIALIZACIÓN -------------------
@@ -428,10 +525,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   actualizarCarritoUI();
 
   // Filtros
-  document.getElementById("buscador").addEventListener("input", aplicarFiltros);
-  document.getElementById("filtro-marca").addEventListener("change", aplicarFiltros);
-  document.getElementById("filtro-inalambrico").addEventListener("change", aplicarFiltros);
-  document.getElementById("orden-precio").addEventListener("change", aplicarFiltros);
+  const buscador = document.getElementById("buscador");
+  const filtroMarca = document.getElementById("filtro-marca");
+  const filtroInalambrico = document.getElementById("filtro-inalambrico");
+  const ordenPrecio = document.getElementById("orden-precio");
+
+  if (buscador) buscador.addEventListener("input", aplicarFiltros);
+  if (filtroMarca) filtroMarca.addEventListener("change", aplicarFiltros);
+  if (filtroInalambrico) filtroInalambrico.addEventListener("change", aplicarFiltros);
+  if (ordenPrecio) ordenPrecio.addEventListener("change", aplicarFiltros);
 
   // Menú de filtros desplegable
   const btnToggleFiltros = document.getElementById("btn-toggle-filtros");
@@ -444,56 +546,72 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Clicks en lista de productos
   const listaProductos = document.getElementById("lista-productos");
-  listaProductos.addEventListener("click", (e) => {
-    if (e.target.classList.contains("btn-comprar-ahora")) {
-      const id = e.target.dataset.id;
-      comprarAhora(id);
-      e.stopPropagation();
-      return;
-    }
-    if (e.target.classList.contains("btn-agregar") && !e.target.classList.contains("btn-agotado")) {
-      const id = e.target.dataset.id;
-      agregarAlCarrito(id);
-      e.stopPropagation();
-      return;
-    }
-    const tarjeta = e.target.closest(".tarjeta-producto");
-    if (tarjeta) {
-      const id = tarjeta.dataset.id;
-      abrirDetalleProducto(id);
-    }
-  });
+  if (listaProductos) {
+    listaProductos.addEventListener("click", (e) => {
+      if (e.target.classList.contains("btn-comprar-ahora")) {
+        const id = e.target.dataset.id;
+        comprarAhora(id);
+        e.stopPropagation();
+        return;
+      }
+      if (e.target.classList.contains("btn-agregar") && !e.target.classList.contains("btn-agotado")) {
+        const id = e.target.dataset.id;
+        agregarAlCarrito(id);
+        e.stopPropagation();
+        return;
+      }
+      const tarjeta = e.target.closest(".tarjeta-producto");
+      if (tarjeta) {
+        const id = tarjeta.dataset.id;
+        abrirDetalleProducto(id);
+      }
+    });
+  }
 
   // Carrito
-  document.getElementById("btn-ver-carrito").addEventListener("click", abrirCarrito);
-  document.getElementById("btn-cerrar-carrito").addEventListener("click", cerrarCarrito);
-  document.getElementById("carrito-backdrop").addEventListener("click", cerrarCarrito);
+  const btnVerCarrito = document.getElementById("btn-ver-carrito");
+  const btnCerrarCarrito = document.getElementById("btn-cerrar-carrito");
+  const carritoBackdrop = document.getElementById("carrito-backdrop");
 
-  document.getElementById("btn-vaciar-carrito").addEventListener("click", () => {
-    if (carrito.length === 0) return;
-    vaciarCarrito();
-  });
+  if (btnVerCarrito) btnVerCarrito.addEventListener("click", abrirCarrito);
+  if (btnCerrarCarrito) btnCerrarCarrito.addEventListener("click", cerrarCarrito);
+  if (carritoBackdrop) carritoBackdrop.addEventListener("click", cerrarCarrito);
+
+  const btnVaciarCarrito = document.getElementById("btn-vaciar-carrito");
+  if (btnVaciarCarrito) {
+    btnVaciarCarrito.addEventListener("click", () => {
+      if (carrito.length === 0) return;
+      vaciarCarrito();
+    });
+  }
 
   const carritoItems = document.getElementById("carrito-items");
-  carritoItems.addEventListener("click", (e) => {
-    const id = e.target.dataset.id;
-    if (!id) return;
+  if (carritoItems) {
+    carritoItems.addEventListener("click", (e) => {
+      const id = e.target.dataset.id;
+      if (!id) return;
 
-    if (e.target.classList.contains("btn-cantidad")) {
-      const accion = e.target.dataset.accion;
-      if (accion === "sumar") cambiarCantidad(id, +1);
-      if (accion === "restar") cambiarCantidad(id, -1);
-    }
-    if (e.target.classList.contains("btn-eliminar")) {
-      eliminarDelCarrito(id);
-    }
-  });
+      if (e.target.classList.contains("btn-cantidad")) {
+        const accion = e.target.dataset.accion;
+        if (accion === "sumar") cambiarCantidad(id, +1);
+        if (accion === "restar") cambiarCantidad(id, -1);
+      }
+      if (e.target.classList.contains("btn-eliminar")) {
+        eliminarDelCarrito(id);
+      }
+    });
+  }
 
-  document.getElementById("btn-finalizar-compra").addEventListener("click", (e) => {
-    e.preventDefault();
-    const link = generarLinkWhatsAppCarrito();
-    if (link) window.location.href = link;
-  });
+  const btnFinalizarCompra = document.getElementById("btn-finalizar-compra");
+  if (btnFinalizarCompra) {
+    btnFinalizarCompra.addEventListener("click", (e) => {
+      e.preventDefault();
+      const link = generarLinkWhatsAppCarrito();
+      if (link) window.location.href = link;
+    });
+  }
 
-  document.getElementById("detalle-backdrop").addEventListener("click", cerrarDetalleProducto);
+  const detalleBackdrop = document.getElementById("detalle-backdrop");
+  if (detalleBackdrop) detalleBackdrop.addEventListener("click", cerrarDetalleProducto);
 });
+

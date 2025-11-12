@@ -23,6 +23,13 @@ function limpiarFormulario() {
   document.getElementById("prod-descripcion").value = "";
   document.getElementById("prod-envios").value = "";
   document.getElementById("prod-detalles").value = "";
+
+  const previewBox = document.getElementById("preview-contenedor");
+  const previewImg = document.getElementById("preview-imagen");
+  const estado = document.getElementById("estado-subida");
+  if (previewBox) previewBox.classList.add("oculto");
+  if (previewImg) previewImg.src = "";
+  if (estado) estado.textContent = "";
 }
 
 function cargarProductoEnFormulario(id, prod) {
@@ -33,10 +40,28 @@ function cargarProductoEnFormulario(id, prod) {
   document.getElementById("prod-stock").value = prod.stock || 0;
   document.getElementById("prod-categoria").value = prod.categoria || "";
   document.getElementById("prod-inalambrico").value = prod.inalambrico ? "true" : "false";
-  document.getElementById("prod-imagen").value = prod.imagen || "";
   document.getElementById("prod-descripcion").value = prod.descripcion || "";
   document.getElementById("prod-envios").value = (prod.opcionesEnvio || []).join(", ");
   document.getElementById("prod-detalles").value = (prod.detalles || []).join("\n");
+
+  // imágenes: si tiene array "imagenes", las mostramos separadas por coma.
+  const imagenes = (prod.imagenes && prod.imagenes.length)
+    ? prod.imagenes
+    : (prod.imagen ? [prod.imagen] : []);
+  document.getElementById("prod-imagen").value = imagenes.join(", ");
+
+  // vista previa
+  const previewBox = document.getElementById("preview-contenedor");
+  const previewImg = document.getElementById("preview-imagen");
+  if (previewBox && previewImg) {
+    if (imagenes.length > 0) {
+      previewImg.src = imagenes[0];
+      previewBox.classList.remove("oculto");
+    } else {
+      previewBox.classList.add("oculto");
+      previewImg.src = "";
+    }
+  }
 }
 
 function renderTablaProductos() {
@@ -96,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const stock = Number(document.getElementById("prod-stock").value || 0);
     const categoria = document.getElementById("prod-categoria").value.trim();
     const inalambrico = document.getElementById("prod-inalambrico").value === "true";
-    const imagen = document.getElementById("prod-imagen").value.trim();
+    const imagenTexto = document.getElementById("prod-imagen").value.trim();
     const descripcion = document.getElementById("prod-descripcion").value.trim();
     const enviosText = document.getElementById("prod-envios").value;
     const detallesText = document.getElementById("prod-detalles").value;
@@ -116,6 +141,13 @@ document.addEventListener("DOMContentLoaded", () => {
       .map(t => t.trim())
       .filter(Boolean);
 
+    // Acá soportamos varias imágenes separadas por coma
+    const imagenes = imagenTexto
+      ? imagenTexto.split(",").map(u => u.trim()).filter(Boolean)
+      : [];
+    const imagenPlaceholder = "https://via.placeholder.com/300x200?text=Producto";
+    const imagenPrincipal = imagenes.length > 0 ? imagenes[0] : imagenPlaceholder;
+
     const producto = {
       nombre,
       marca,
@@ -123,7 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
       stock,
       categoria,
       inalambrico,
-      imagen: imagen || "https://via.placeholder.com/300x200?text=Producto",
+      imagen: imagenPrincipal,   // imagen principal
+      imagenes,                  // array con todas las urls
       descripcion,
       opcionesEnvio,
       detalles
