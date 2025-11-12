@@ -5,13 +5,22 @@
   <title>🔒 Panel de administración - Solo personal autorizado</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    :root{
+      --amarillo:#ffd600;
+      --primario:#1976d2;
+      --rojo:#c62828;
+      --gris:#e0e0e0;
+      --borde:#ddd;
+      --texto:#333;
+    }
     body {
       background-color: #f5f5f5;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
+      color: var(--texto);
     }
     header.header {
-      background-color: #ffd600;
+      background-color: var(--amarillo);
       padding: 10px 16px;
       display: flex;
       justify-content: space-between;
@@ -29,7 +38,7 @@
       font-size: 13px;
     }
     .btn-principal {
-      background-color: #1976d2;
+      background-color: var(--primario);
       color: #fff;
       border: none;
       border-radius: 999px;
@@ -40,11 +49,9 @@
       display: inline-block;
       white-space: nowrap;
     }
-    .btn-principal:hover {
-      filter: brightness(0.95);
-    }
+    .btn-principal:hover { filter: brightness(0.95); }
     .btn-secundario {
-      background-color: #e0e0e0;
+      background-color: var(--gris);
       border: none;
       border-radius: 999px;
       padding: 8px 16px;
@@ -52,22 +59,19 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .btn-secundario:hover {
-      filter: brightness(0.95);
-    }
+    .btn-secundario:hover { filter: brightness(0.95); }
+
     main.admin-container {
       max-width: 1000px;
       margin: 16px auto;
       background-color: #fff;
       padding: 16px;
       border-radius: 8px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--borde);
       box-sizing: border-box;
     }
-    .admin-container h1 {
-      font-size: 22px;
-      margin: 0 0 8px;
-    }
+    .admin-container h1 { font-size: 22px; margin: 0 0 8px; }
+
     .admin-form {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -90,197 +94,108 @@
       font-size: 13px;
       box-sizing: border-box;
     }
-    .admin-form textarea {
-      min-height: 60px;
-      resize: vertical;
-    }
-    .admin-form-full {
-      grid-column: 1 / 3;
-    }
-    .admin-buttons {
-      margin-top: 6px;
+    .admin-form textarea { min-height: 60px; resize: vertical; }
+    .admin-form-full { grid-column: 1 / 3; }
+    .admin-buttons { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+    /* Buscador admin */
+    .admin-buscador {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      justify-content: center;
+      margin: 16px 0 6px;
+      position: relative;
     }
+    .admin-buscador input {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 40px 10px 14px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 999px;
+      outline: none;
+    }
+    .admin-buscador svg {
+      position: absolute;
+      right: calc(50% - 260px + 12px);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
+      color: #777;
+      pointer-events: none;
+    }
+
+    .tabla-wrapper { width: 100%; overflow-x: auto; }
     table.admin-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
       margin-top: 8px;
-      min-width: 600px; /* para scroll horizontal en móvil */
+      min-width: 600px;
     }
-    .admin-table thead {
-      background-color: #f5f5f5;
-    }
-    .admin-table th,
-    .admin-table td {
-      border: 1px solid #ddd;
+    .admin-table thead { background-color: #f5f5f5; }
+    .admin-table th, .admin-table td {
+      border: 1px solid var(--borde);
       padding: 6px 8px;
       text-align: left;
       box-sizing: border-box;
     }
-    .admin-table-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .btn-pequeño {
-      padding: 4px 8px;
-      font-size: 12px;
-    }
-    footer.footer {
-      text-align: center;
-      padding: 12px;
-      font-size: 12px;
-      color: #555;
-    }
-    .oculto {
-      display: none;
-    }
+    .admin-table-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .btn-pequeño { padding: 4px 8px; font-size: 12px; }
 
-    /* Contenedor de tabla para scroll horizontal en móvil */
-    .tabla-wrapper {
-      width: 100%;
-      overflow-x: auto;
-    }
+    footer.footer { text-align: center; padding: 12px; font-size: 12px; color: #555; }
+    .oculto { display: none; }
 
     /* LOGIN */
     .login-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: radial-gradient(circle at top, #ffffff 0, #f2f2f2 55%, #e0e0e0 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       z-index: 9999;
     }
     .login-card {
-      background: #ffffff;
-      border-radius: 12px;
+      background: #ffffff; border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      padding: 20px 22px;
-      max-width: 360px;
-      width: 90%;
-      box-sizing: border-box;
-      text-align: center;
-      border-top: 4px solid #c62828;
+      padding: 20px 22px; max-width: 360px; width: 90%;
+      box-sizing: border-box; text-align: center; border-top: 4px solid var(--rojo);
     }
     .login-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 2px solid #c62828;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 10px;
-      color: #c62828;
-      font-size: 24px;
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid var(--rojo);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 10px; color: var(--rojo); font-size: 24px;
     }
-    .login-card h2 {
-      margin: 0 0 4px;
-      font-size: 20px;
-      text-transform: uppercase;
-      color: #c62828;
-    }
-    .login-card h3 {
-      margin: 0 0 10px;
-      font-size: 14px;
-      text-transform: uppercase;
-      color: #333;
-    }
-    .login-card p {
-      margin: 0 0 14px;
-      font-size: 13px;
-      color: #555;
-    }
-    .login-card label {
-      font-size: 13px;
-      font-weight: 600;
-      display: block;
-      margin-bottom: 4px;
-      text-align: left;
-    }
+    .login-card h2 { margin: 0 0 4px; font-size: 20px; text-transform: uppercase; color: var(--rojo); }
+    .login-card h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; color: #333; }
+    .login-card p { margin: 0 0 14px; font-size: 13px; color: #555; }
+    .login-card label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; text-align: left; }
     .login-card input[type="password"] {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      box-sizing: border-box;
-      margin-bottom: 6px;
+      width: 100%; padding: 8px 10px; border-radius: 999px;
+      border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; margin-bottom: 6px;
     }
-    .login-error {
-      color: #c62828;
-      font-size: 12px;
-      min-height: 16px;
-      margin-bottom: 6px;
-      text-align: left;
-    }
-    .login-btn {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: none;
-      background-color: #1976d2;
-      color: #fff;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .login-btn:hover {
-      filter: brightness(0.95);
-    }
-    .login-note {
-      font-size: 11px;
-      color: #777;
-      margin-top: 8px;
-    }
+    .login-error { color: var(--rojo); font-size: 12px; min-height: 16px; margin-bottom: 6px; text-align: left; }
+    .login-btn { width: 100%; padding: 8px 12px; border-radius: 999px; border: none; background-color: var(--primario); color: #fff; font-size: 14px; cursor: pointer; }
+    .login-btn:hover { filter: brightness(0.95); }
+    .login-note { font-size: 11px; color: #777; margin-top: 8px; }
 
     /* Preview imagen subida */
     .preview-contenedor {
-      margin-top: 6px;
-      border: 1px solid #ddd;
-      padding: 6px;
-      border-radius: 4px;
-      background-color: #fafafa;
+      margin-top: 6px; border: 1px solid var(--borde);
+      padding: 6px; border-radius: 4px; background-color: #fafafa;
     }
     .preview-contenedor img {
-      max-width: 100%;
-      max-height: 140px;
-      display: block;
-      margin: 4px auto 0;
-      object-fit: contain;
+      max-width: 100%; max-height: 140px; display: block; margin: 4px auto 0; object-fit: contain;
     }
-    .estado-subida {
-      font-size: 12px;
-      margin-top: 4px;
-    }
+    .estado-subida { font-size: 12px; margin-top: 4px; }
 
     /* RESPONSIVE */
     @media (max-width: 768px) {
-      header.header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      header.header h1 {
-        font-size: 18px;
-      }
-      main.admin-container {
-        margin: 10px;
-        padding: 12px;
-      }
-      .admin-form {
-        grid-template-columns: 1fr;
-      }
-      .admin-form-full {
-        grid-column: 1 / 2;
-      }
-      .admin-buttons {
-        justify-content: flex-start;
-      }
-      .admin-table {
-        font-size: 12px;
+      header.header { flex-direction: column; align-items: flex-start; }
+      header.header h1 { font-size: 18px; }
+      main.admin-container { margin: 10px; padding: 12px; }
+      .admin-form { grid-template-columns: 1fr; }
+      .admin-form-full { grid-column: 1 / 2; }
+      .admin-buscador svg {
+        right: 16px;
       }
     }
   </style>
@@ -360,10 +275,10 @@
     <div class="admin-form-full">
       <label>Imagen del producto</label>
       <input type="file" id="prod-imagen-archivo" accept="image/*">
-      <small>O pegá una URL directa si ya tenés la imagen subida:</small>
-      <input type="text" id="prod-imagen" placeholder="https://...">
+      <small>O pegá una URL directa (o varias separadas por coma):</small>
+      <input type="text" id="prod-imagen" placeholder="https://... , https://...">
       <div id="preview-contenedor" class="preview-contenedor oculto">
-        <span style="font-size:12px;color:#555;">Vista previa de la imagen:</span>
+        <span style="font-size:12px;color:#555;">Vista previa (1ª imagen):</span>
         <img id="preview-imagen" src="" alt="Vista previa">
       </div>
       <div id="estado-subida" class="estado-subida"></div>
@@ -376,8 +291,7 @@
 
     <div class="admin-form-full">
       <label for="prod-envios">Opciones de envío (separadas por coma)</label>
-      <input type="text" id="prod-envios"
-             placeholder="Envío a domicilio, Retiro en el local, Envío a todo el país">
+      <input type="text" id="prod-envios" placeholder="Envío a domicilio, Retiro en el local, Envío a todo el país">
     </div>
 
     <div class="admin-form-full">
@@ -391,7 +305,17 @@
     </div>
   </form>
 
-  <h2 style="font-size:18px;margin:15px 0 8px;">Listado de productos</h2>
+  <!-- 🔍 Buscador de productos (ADMIN) -->
+  <div class="admin-buscador">
+    <input type="text" id="buscador-admin" placeholder="Buscar producto por nombre o marca...">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+  </div>
+
+  <h2 style="font-size:18px;margin:6px 0 8px;">Listado de productos</h2>
 
   <div class="tabla-wrapper">
     <table class="admin-table">
@@ -444,7 +368,7 @@
     const inputPass = document.getElementById("admin-password-input");
     const errorBox = document.getElementById("admin-login-error");
 
-    // Login simple
+    // Login simple (sesión memoria)
     if (sessionStorage.getItem("adminLogged") === "true") {
       loginOverlay.style.display = "none";
       adminMain.classList.remove("oculto");
@@ -486,7 +410,13 @@
           const snapshot = await ref.put(file);
           const downloadURL = await snapshot.ref.getDownloadURL();
 
-          urlInput.value = downloadURL;
+          // si ya había URLs, agregamos coma y la nueva
+          if (urlInput.value.trim().length > 0) {
+            urlInput.value = urlInput.value.trim() + ", " + downloadURL;
+          } else {
+            urlInput.value = downloadURL;
+          }
+
           previewImg.src = downloadURL;
           previewBox.classList.remove("oculto");
 

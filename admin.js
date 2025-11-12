@@ -1,10 +1,11 @@
-// Usamos la instancia global "db" creada en admin.html
+// Colección de Firestore
 const productosRef = db.collection("productos");
 
-let productos = [];
+let productos = [];      // [{id, data}]
+let filtroTexto = "";    // texto del buscador
 
 function formatearPrecio(numero) {
-  return numero.toLocaleString("es-AR", {
+  return (Number(numero) || 0).toLocaleString("es-AR", {
     style: "currency",
     currency: "ARS",
     minimumFractionDigits: 0
@@ -44,13 +45,12 @@ function cargarProductoEnFormulario(id, prod) {
   document.getElementById("prod-envios").value = (prod.opcionesEnvio || []).join(", ");
   document.getElementById("prod-detalles").value = (prod.detalles || []).join("\n");
 
-  // imágenes: si tiene array "imagenes", las mostramos separadas por coma.
+  // imágenes (si hay array, lo mostramos separado por comas)
   const imagenes = (prod.imagenes && prod.imagenes.length)
     ? prod.imagenes
     : (prod.imagen ? [prod.imagen] : []);
   document.getElementById("prod-imagen").value = imagenes.join(", ");
 
-  // vista previa
   const previewBox = document.getElementById("preview-contenedor");
   const previewImg = document.getElementById("preview-imagen");
   if (previewBox && previewImg) {
@@ -64,16 +64,31 @@ function cargarProductoEnFormulario(id, prod) {
   }
 }
 
+function productosFiltrados() {
+  if (!filtroTexto) return productos;
+  const t = filtroTexto.toLowerCase();
+  return productos.filter(p => {
+    const d = p.data;
+    return (
+      (d.nombre && d.nombre.toLowerCase().includes(t)) ||
+      (d.marca && d.marca.toLowerCase().includes(t)) ||
+      (d.descripcion && d.descripcion.toLowerCase().includes(t))
+    );
+  });
+}
+
 function renderTablaProductos() {
   const tbody = document.getElementById("tabla-productos-body");
   tbody.innerHTML = "";
 
-  if (productos.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6">No hay productos cargados.</td></tr>`;
+  const lista = productosFiltrados();
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6">No se encontraron productos.</td></tr>`;
     return;
   }
 
-  productos.forEach(p => {
+  lista.forEach(p => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${p.data.nombre || "-"}</td>
@@ -105,12 +120,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("form-producto");
   const btnLimpiar = document.getElementById("btn-limpiar-form");
   const tbody = document.getElementById("tabla-productos-body");
+  const inputBuscador = document.getElementById("buscador-admin");
 
+  // Cargar productos
   cargarProductosDesdeFirestore().catch(err => {
     console.error("Error cargando productos:", err);
     alert("Hubo un problema cargando los productos.");
   });
 
+  // Buscar en vivo
+  if (inputBuscador) {
+    inputBuscador.addEventListener("input", () => {
+      filtroTexto = inputBuscador.value.trim();
+      renderTablaProductos();
+    });
+  }
+
+  // Guardar / actualizar
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -131,17 +157,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const opcionesEnvio = enviosText
-      .split(",")
-      .map(t => t.trim())
-      .filter(Boolean);
+    const opcionesEnvio = enviosText.split(",").map(t => t.trim()).filter(Boolean);
+    const detalles = detallesText.split("\n").map(t => t.trim()).filter(Boolean);
 
-    const detalles = detallesText
-      .split("\n")
-      .map(t => t.trim())
-      .filter(Boolean);
-
-    // Acá soportamos varias imágenes separadas por coma
     const imagenes = imagenTexto
       ? imagenTexto.split(",").map(u => u.trim()).filter(Boolean)
       : [];
@@ -155,8 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
       stock,
       categoria,
       inalambrico,
-      imagen: imagenPrincipal,   // imagen principal
-      imagenes,                  // array con todas las urls
+      imagen: imagenPrincipal, // principal para la grilla
+      imagenes,                // array completo para el detalle/carrusel
       descripcion,
       opcionesEnvio,
       detalles
@@ -178,10 +196,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnLimpiar.addEventListener("click", () => {
-    limpiarFormulario();
-  });
+  btnLimpiar.addEventListener("click", () => limpiarFormulario());
 
+  // Editar / eliminar
   tbody.addEventListener("click", async (e) => {
     const accion = e.target.dataset.accion;
     const id = e.target.dataset.id;

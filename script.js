@@ -34,6 +34,30 @@ function obtenerImagenesProducto(producto) {
   return imagenes;
 }
 
+// ---------------------- URL / DEEP-LINK ----------------------
+
+function buildProductURL(id) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("producto", id);
+  return url.toString();
+}
+
+function getProductIdFromURL() {
+  const url = new URL(window.location.href);
+  return url.searchParams.get("producto");
+}
+
+function updateURLForProduct(id) {
+  const url = buildProductURL(id);
+  history.pushState({ producto: id }, "", url);
+}
+
+function clearProductFromURL() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("producto");
+  history.pushState({}, "", url.toString());
+}
+
 // ---------------------- FIRESTORE ----------------------
 
 async function cargarProductosDesdeFirestore() {
@@ -196,7 +220,7 @@ function generarLinkWhatsAppCarrito() {
   }
 
   const envio = obtenerEnvioSeleccionado();
-  if (!envio) {
+  if (envio === "") {
     alert("Seleccioná una opción de envío en el carrito antes de iniciar la compra.");
     return null;
   }
@@ -346,7 +370,7 @@ function aplicarFiltros() {
   renderProductos(filtrados);
 }
 
-// ---------------------- DETALLE PRODUCTO -----------------
+// ---------------------- DETALLE PRODUCTO (con deep-link y compartir) -----------------
 
 function abrirDetalleProducto(idProducto) {
   const producto = obtenerProductoPorId(idProducto);
@@ -378,7 +402,10 @@ function abrirDetalleProducto(idProducto) {
     <div class="detalle-panel-contenido">
       <div class="detalle-header">
         <h2>${producto.nombre}</h2>
-        <button id="btn-cerrar-detalle" class="btn-cerrar-detalle">✕</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="btn-compartir" title="Compartir" class="btn-secundario">Compartir</button>
+          <button id="btn-cerrar-detalle" class="btn-cerrar-detalle">✕</button>
+        </div>
       </div>
       <div class="detalle-body">
         <div class="detalle-imagen-contenedor">
@@ -419,9 +446,45 @@ function abrirDetalleProducto(idProducto) {
   panel.classList.remove("oculto");
   backdrop.classList.remove("oculto");
 
-  const btnCerrar = document.getElementById("btn-cerrar-detalle");
-  if (btnCerrar) btnCerrar.addEventListener("click", cerrarDetalleProducto);
+  // Actualizamos la URL para compartir
+  updateURLForProduct(producto.id);
 
+  // Cerrar
+  const btnCerrar = document.getElementById("btn-cerrar-detalle");
+  if (btnCerrar) btnCerrar.addEventListener("click", () => {
+    cerrarDetalleProducto();
+    clearProductFromURL();
+  });
+
+  // Compartir / copiar enlace
+  const btnCompartir = document.getElementById("btn-compartir");
+  if (btnCompartir) {
+    btnCompartir.addEventListener("click", async () => {
+      const shareURL = buildProductURL(producto.id);
+      const title = producto.nombre;
+      const text = `Mirá este producto: ${producto.nombre}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text, url: shareURL });
+        } catch (e) {
+          // Si cancela, no hacemos nada
+        }
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(shareURL);
+          alert("Enlace copiado al portapapeles ✅");
+        } catch {
+          // Fallback
+          prompt("Copiá el enlace:", shareURL);
+        }
+      } else {
+        prompt("Copiá el enlace:", shareURL);
+      }
+    });
+  }
+
+  // Botones de acción
   const btnAgregar = panel.querySelector(".btn-agregar:not(.btn-agotado)");
   if (btnAgregar) {
     btnAgregar.addEventListener("click", e => agregarAlCarrito(e.target.dataset.id));
@@ -442,9 +505,7 @@ function abrirDetalleProducto(idProducto) {
 
     function actualizarImagen() {
       imgEl.src = imagenes[indiceActual];
-      if (indicador) {
-        indicador.textContent = `${indiceActual + 1} / ${imagenes.length}`;
-      }
+      if (indicador) indicador.textContent = `${indiceActual + 1} / ${imagenes.length}`;
     }
 
     btnPrev.addEventListener("click", () => {
@@ -463,6 +524,13 @@ function abrirDetalleProducto(idProducto) {
     const imgEl = panel.querySelector("#detalle-imagen");
     imgEl.addEventListener("click", () => abrirImagenAmpliada(imagenes[0]));
   }
+}
+
+function cerrarDetalleProducto() {
+  const panel = document.getElementById("detalle-panel");
+  const backdrop = document.getElementById("detalle-backdrop");
+  if (panel) panel.classList.add("oculto");
+  if (backdrop) backdrop.classList.add("oculto");
 }
 
 // ---------------------- IMAGEN AMPLIADA -----------------
@@ -484,13 +552,6 @@ function abrirImagenAmpliada(src) {
       backdrop.classList.add("oculto");
     }
   };
-}
-
-function cerrarDetalleProducto() {
-  const panel = document.getElementById("detalle-panel");
-  const backdrop = document.getElementById("detalle-backdrop");
-  if (panel) panel.classList.add("oculto");
-  if (backdrop) backdrop.classList.add("oculto");
 }
 
 // ---------------------- PANEL CARRITO --------------------
@@ -523,6 +584,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   cargarMarcasEnFiltro();
   renderProductos(productos);
   actualizarCarritoUI();
+
+  // Si la URL ya trae ?producto=ID, abrimos ese detalle
+  const inicialId = getProductIdFromURL();
+  if (inicialId) {
+    const existe = obtenerProductoPorId(inicialId);
+    if (existe) abrirDetalleProducto(inicialId);
+  }
 
   // Filtros
   const buscador = document.getElementById("buscador");
@@ -612,6 +680,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const detalleBackdrop = document.getElementById("detalle-backdrop");
-  if (detalleBackdrop) detalleBackdrop.addEventListener("click", cerrarDetalleProducto);
-});
+  if (detalleBackdrop) detalleBackdrop.addEventListener("click", () => {
+    cerrarDetalleProducto();
+    clearProductFromURL();
+  });
 
+  // Navegación del navegador (Back/Forward) para mantener el estado del detalle
+  window.addEventListener("popstate", () => {
+    const pid = getProductIdFromURL();
+    if (pid) {
+      const p = obtenerProductoPorId(pid);
+      if (p) abrirDetalleProducto(pid);
+    } else {
+      cerrarDetalleProducto();
+    }
+  });
+});
