@@ -45,7 +45,6 @@ function cargarProductoEnFormulario(id, prod) {
   document.getElementById("prod-envios").value = (prod.opcionesEnvio || []).join(", ");
   document.getElementById("prod-detalles").value = (prod.detalles || []).join("\n");
 
-  // imágenes (si hay array, lo mostramos separado por comas)
   const imagenes = (prod.imagenes && prod.imagenes.length)
     ? prod.imagenes
     : (prod.imagen ? [prod.imagen] : []);
@@ -76,6 +75,35 @@ function productosFiltrados() {
     );
   });
 }
+
+/* ====== ESTADÍSTICAS ====== */
+function calcularEstadisticas(lista) {
+  const total = lista.length;
+  let activos = 0;
+  let agotados = 0;
+  let valorTotal = 0;
+
+  for (const p of lista) {
+    const stock = Number(p.data.stock) || 0;
+    const precio = Number(p.data.precio) || 0;
+    if (stock > 0) activos++; else agotados++;
+    valorTotal += stock * precio;
+  }
+  return { total, activos, agotados, valorTotal };
+}
+
+function renderEstadisticas() {
+  const { total, activos, agotados, valorTotal } = calcularEstadisticas(productos);
+  const elTotal = document.getElementById("stat-total");
+  const elAct = document.getElementById("stat-activos");
+  const elAgo = document.getElementById("stat-agotados");
+  const elVal = document.getElementById("stat-valor");
+  if (elTotal) elTotal.textContent = total;
+  if (elAct) elAct.textContent = activos;
+  if (elAgo) elAgo.textContent = agotados;
+  if (elVal) elVal.textContent = formatearPrecio(valorTotal);
+}
+/* ========================== */
 
 function renderTablaProductos() {
   const tbody = document.getElementById("tabla-productos-body");
@@ -113,7 +141,8 @@ async function cargarProductosDesdeFirestore() {
     id: doc.id,
     data: doc.data()
   }));
-  renderTablaProductos();
+  renderEstadisticas();    // <-- actualiza estadísticas
+  renderTablaProductos();  // <-- lista
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -173,8 +202,8 @@ document.addEventListener("DOMContentLoaded", () => {
       stock,
       categoria,
       inalambrico,
-      imagen: imagenPrincipal, // principal para la grilla
-      imagenes,                // array completo para el detalle/carrusel
+      imagen: imagenPrincipal,
+      imagenes,
       descripcion,
       opcionesEnvio,
       detalles
@@ -189,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Producto creado correctamente.");
       }
       limpiarFormulario();
-      await cargarProductosDesdeFirestore();
+      await cargarProductosDesdeFirestore(); // actualiza lista + estadísticas
     } catch (err) {
       console.error("Error guardando producto:", err);
       alert("Hubo un error guardando el producto.");
@@ -215,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!confirmar) return;
       try {
         await productosRef.doc(id).delete();
-        await cargarProductosDesdeFirestore();
+        await cargarProductosDesdeFirestore(); // refresca lista + estadísticas
         alert("Producto eliminado.");
       } catch (err) {
         console.error("Error eliminando producto:", err);

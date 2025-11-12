@@ -198,6 +198,34 @@
         right: 16px;
       }
     }
+
+
+
+
+/* ======= ADMIN: ESTADÍSTICAS ======= */
+.admin-stats{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap:12px;
+  margin: 6px 0 12px;
+}
+.admin-stats .stat{
+  background:#fff; border:1px solid var(--borde); border-radius:10px;
+  padding:12px; display:flex; flex-direction:column; gap:4px;
+}
+.stat-label{ font-size:13px; color:#555; }
+.stat-value{ font-size:20px; font-weight:800; color:#222; }
+
+@media (max-width: 900px){
+  .admin-stats{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 520px){
+  .admin-stats{ grid-template-columns: 1fr; }
+}
+
+
+
+
   </style>
 </head>
 <body>
@@ -314,6 +342,33 @@
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
   </div>
+
+
+
+
+<!-- 📊 Estadísticas -->
+<section id="admin-stats" class="admin-stats">
+  <div class="stat">
+    <span class="stat-label">📦 Productos totales</span>
+    <span id="stat-total" class="stat-value">—</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">⚙️ Activos (stock &gt; 0)</span>
+    <span id="stat-activos" class="stat-value">—</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">⛔ Agotados</span>
+    <span id="stat-agotados" class="stat-value">—</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">💰 Valor total de stock</span>
+    <span id="stat-valor" class="stat-value">—</span>
+  </div>
+</section>
+
+
+
+
 
   <h2 style="font-size:18px;margin:6px 0 8px;">Listado de productos</h2>
 

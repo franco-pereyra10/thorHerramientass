@@ -213,6 +213,7 @@ function obtenerEnvioSeleccionado() {
   return select.value;
 }
 
+// ✅ Versión corregida: no repite “Retiro en el local” en Dirección
 function generarLinkWhatsAppCarrito() {
   if (carrito.length === 0) {
     alert("El carrito está vacío.");
@@ -235,8 +236,6 @@ function generarLinkWhatsAppCarrito() {
     const localidad = prompt("Localidad del cliente:");
     if (localidad === null) return null;
     direccionCompleta = `${(calleAltura || "").trim()} - ${(localidad || "").trim()}`;
-  } else {
-    direccionCompleta = "Retiro en el local";
   }
 
   let texto = "Hola, quiero hacer este pedido:\n";
@@ -251,7 +250,9 @@ function generarLinkWhatsAppCarrito() {
   texto += `Opción de envío: ${envio}\n\n`;
   texto += "Datos del cliente:\n";
   texto += `Nombre: ${nombre || "-"}\n`;
-  texto += `Dirección: ${direccionCompleta || "-"}\n`;
+  if (direccionCompleta) {
+    texto += `Dirección: ${direccionCompleta}\n`;
+  }
 
   const mensaje = encodeURIComponent(texto);
   return `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
@@ -370,7 +371,7 @@ function aplicarFiltros() {
   renderProductos(filtrados);
 }
 
-// ---------------------- DETALLE PRODUCTO (con deep-link y compartir) -----------------
+// ---------------------- DETALLE PRODUCTO (deep-link + compartir + ampliar imagen) -----------------
 
 function abrirDetalleProducto(idProducto) {
   const producto = obtenerProductoPorId(idProducto);
@@ -468,14 +469,13 @@ function abrirDetalleProducto(idProducto) {
         try {
           await navigator.share({ title, text, url: shareURL });
         } catch (e) {
-          // Si cancela, no hacemos nada
+          // cancelado
         }
       } else if (navigator.clipboard && navigator.clipboard.writeText) {
         try {
           await navigator.clipboard.writeText(shareURL);
           alert("Enlace copiado al portapapeles ✅");
         } catch {
-          // Fallback
           prompt("Copiá el enlace:", shareURL);
         }
       } else {
@@ -685,7 +685,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     clearProductFromURL();
   });
 
-  // Navegación del navegador (Back/Forward) para mantener el estado del detalle
+  // Navegación del navegador (Back/Forward)
   window.addEventListener("popstate", () => {
     const pid = getProductIdFromURL();
     if (pid) {
