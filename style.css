@@ -37,7 +37,7 @@ body {
 
 /* Contenedor del botón de filtros + menú */
 .filtros-wrapper {
-    position: relative;
+    position: relative; /* Importante para que el dropdown se posicione */
 }
 
 /* BOTÓN CARRITO */
@@ -73,18 +73,23 @@ body {
     font-size: 14px;
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    white-space: nowrap; 
 }
 
-/* BARRA DEL BUSCADOR (SIEMPRE VISIBLE) */
+/* BARRA DEL BUSCADOR + FILTROS (Desktop) */
 .filtros {
     padding: 12px 20px;
     background-color: #fff;
     border-bottom: 1px solid #ddd;
+    /* Usamos Flexbox para alinear buscador y filtros */
+    display: flex;
+    justify-content: center; 
+    gap: 15px; 
 }
 
 .filtros-buscador {
-    max-width: 600px;
-    margin: 0 auto;
+    flex-grow: 1; 
+    max-width: 600px; 
 }
 
 .filtros-buscador input {
@@ -98,7 +103,7 @@ body {
 .filtros-contenido {
     position: absolute;
     top: calc(100% + 6px);
-    right: 0;
+    right: 0; 
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -125,6 +130,7 @@ body {
 
 .lista-productos {
     display: grid;
+    /* Grid default para escritorio */
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 15px;
 }
@@ -492,12 +498,16 @@ body {
 
 .detalle-imagen-contenedor {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px; 
 }
 
 .detalle-imagen-contenedor img {
     max-width: 100%;
+    height: auto;
+    display: block;
     max-height: 350px;
     object-fit: contain;
 }
@@ -564,65 +574,32 @@ body {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-/* Contenedor de imagen en el detalle */
-.detalle-imagen-contenedor {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px; /* esto separa bien de la descripción */
-}
-
-.detalle-imagen-contenedor img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Controles del carrusel */
+/* Controles Carrusel */
 .detalle-imagen-controles {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
 }
 
 .detalle-nav {
-  border-radius: 50%;
-  border: 1px solid #ccc;
-  background-color: #ffffff;
-  padding: 8px 14px;
-  font-size: 20px;
-  cursor: pointer;
-  line-height: 1;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+    padding: 8px 14px;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
 }
 
 .detalle-nav:hover {
-  filter: brightness(0.95);
+    filter: brightness(0.95);
 }
 
 .detalle-indicador {
-  font-size: 13px;
-  color: #555;
+    font-size: 13px;
+    color: #555;
 }
-
-
-
-
-
-
-
-
 
 
 /* RESPONSIVE */
@@ -632,14 +609,115 @@ body {
     }
 }
 
+/* === MODIFICACIÓN PARA MÓVILES (500PX O MENOS) === */
+/* === MODIFICACIÓN PARA MÓVILES (500PX O MENOS) === */
+@media (max-width: 600px) { 
+    
+    /* 1. HEADER: Logo y Carrito horizontal (como lo dejaste en el último paso) */
+    .header {
+        flex-direction: row; 
+        align-items: flex-start; 
+        padding: 10px 15px;
+        justify-content: space-between; 
+    }
+
+    .logo {
+        text-align: left;
+        margin-bottom: 0;
+        flex-grow: 1; 
+    }
+    
+    .logo h1 {
+        font-size: 20px; 
+    }
+    
+    .logo p {
+        font-size: 12px;
+    }
+
+    .header-right {
+        width: auto; 
+        align-items: center;
+    }
+    
+    .header .filtros-wrapper {
+        display: none !important; 
+    }
+
+
+    /* 2. BARRA DE BUSCADOR + FILTROS: MANTENEMOS EN FILA Y AJUSTAMOS TAMAÑOS */
+    .filtros {
+        padding: 10px 15px;
+        flex-direction: row; /* <--- CLAVE: Mantiene la fila */
+        gap: 8px; /* Reducimos el espacio entre el buscador y el botón */
+        align-items: center; /* Alinea verticalmente */
+        /* Eliminamos align-items: stretch para que no se estiren */
+    }
+    
+    /* El buscador ocupa la mayor parte del espacio */
+    .filtros-buscador {
+        max-width: 100%;
+        flex-grow: 1; 
+    }
+    
+    .filtros-buscador input {
+        padding: 6px 8px; /* Reducimos el padding del input */
+        font-size: 13px;
+    }
+    
+    /* El botón de filtros tiene un tamaño fijo y reducido */
+    .filtros-wrapper {
+        width: auto; 
+        flex-shrink: 0; /* Evita que el botón se achique */
+    }
+    
+    .btn-filtros {
+        padding: 6px 10px; /* Ajustamos el padding del botón */
+        font-size: 13px;
+    }
+    
+    /* Ajuste de posición del dropdown de filtros (para evitar que se vaya a la izquierda) */
+    .filtros-contenido {
+        right: 0;
+        left: auto; /* Se alinea a la derecha del botón, no al 100% de ancho */
+        width: 200px; /* Ancho fijo para móvil */
+        min-width: unset;
+        max-width: unset;
+    }
+
+
+    /* 3. Ajustes de la lista de productos (para que sean 2 columnas) */
+    .lista-productos {
+        grid-template-columns: 1fr 1fr; 
+        gap: 10px;
+    }
+    
+    .contenedor {
+        padding: 10px; 
+    }
+    
+    .tarjeta-producto {
+        padding: 8px; 
+    }
+    
+    .tarjeta-producto img {
+        height: 120px; 
+    }
+
+    .acciones-producto {
+        flex-direction: column; 
+        gap: 4px;
+    }
+    .acciones-producto button {
+        padding: 6px 8px;
+        font-size: 13px;
+    }
+}
+/* ============================================================= */
+/* ============================================================= */
+
 @media (max-width: 600px) {
     .filtros-buscador {
         max-width: 100%;
-    }
-
-    .filtros-contenido {
-        right: 0;
-        left: auto;
-        min-width: 210px;
     }
 }
